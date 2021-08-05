@@ -17,5 +17,5 @@ spec:
           - name: MESSAGE_COUNT
             value: '20000'
           - name: MESSAGE_FREQUENCY
-            value: '30' # send a message every 30 ms
+            value: '100' # send a message every 100 ms
       restartPolicy: Never

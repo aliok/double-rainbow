@@ -7,8 +7,10 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/target: "2"
-        # autoscaling.knative.dev/maxScale: "30"
+        autoscaling.knative.dev/maxScale: "4"
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/target: "1"
+        autoscaling.knative.dev/targetUtilizationPercentage: "30"
     spec:
       containers:
        - image: docker.io/aliok/a-processor
@@ -16,8 +18,8 @@ spec:
          - name: LATENCY
            value: "100"
          - name: HOLD
-           value: "5"
+           value: "100"
          - name: KAFKA_HOST
            value: my-cluster-kafka-bootstrap.kafka:9092
          - name: KAFKA_TOPIC
-           value: topic-a
+           value: topic-b
