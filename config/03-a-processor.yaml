@@ -1,0 +1,23 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: a-processor
+  namespace: my-namespace
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/target: "2"
+        # autoscaling.knative.dev/maxScale: "30"
+    spec:
+      containers:
+       - image: docker.io/aliok/a-processor
+         env:
+         - name: LATENCY
+           value: "100"
+         - name: HOLD
+           value: "5"
+         - name: KAFKA_HOST
+           value: my-cluster-kafka-bootstrap.kafka:9092
+         - name: KAFKA_TOPIC
+           value: topic-a

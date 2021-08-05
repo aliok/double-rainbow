@@ -1,41 +1,8 @@
-# Knative Serverless Event Processing Demo
-
-## Introduction
-
-This project demonstrates how to do serverless event processing with Knative.
-
-A special application, `kafka-smasher` located in the source tree, produces lots of messages to the Kafka cluster.
-
-KafkaSource fetches them and then sends them to the Knative service called `request-logger`, which is also located in the source tree.
-`request-logger` is a very simple application that only logs the requests it receives.
-
-Since `kafka-smasher` is sending a lot of messages, Knative will scale the `request-logger` horizontally to multiple pods and kill
-the pods once all messages are consumed from Kafka. 
-
-Following the diagram of the workflow:
+## Flow
 
 ```
-                            ┌───────────┐                                   Knative Service
-                            │           │        ┌───────────────┐    ┌─────────────────────────┐
-┌──────────────────┐        │           │        │               │    │                         │
-│ Message Producer ├────────►   Kafka   ├────────►  KafkaSource  ├────►─┐                       │
-│  (kafka-smasher) │        │           │        │               │    │ │                       │
-└──────────────────┘        │           │        └───────────────┘    │ │                       │
-                            └───────────┘                             │ │  ┌──────────────────┐ │
-                                                                      │ ├──►       Pod        │ │
-                                                                      │ │  │ (request-logger) │ │
-                                                                      │ │  └──────────────────┘ │
-                                                                      │ │                       │
-                                                                      │ │  ┌──────────────────┐ │
-                                                                      │ └──►       Pod        │ │
-                                                                      │    │ (request-logger) │ │
-                                                                      │    └──────────────────┘ │
-                                                                      │                         │
-                                                                      │                         │
-                                                                      │         ...             │
-                                                                      └─────────────────────────┘
+Message source  ==>  KafkaSource (a)  ==>  Service (a-processor)  ==>  KafkaSource (b) ==>  Service (b-sink)
 ```
-
 
 ## Prerequisites
 
@@ -43,7 +10,7 @@ Following the diagram of the workflow:
 * `kind`: https://kind.sigs.k8s.io/
 * `kubectl`: https://kubernetes.io/docs/tasks/tools/
 * `stern`: https://github.com/wercker/stern
-* A recent version of NodeJS (demo presented with Node v12.14.1)  
+* A recent version of NodeJS (demo presented with Node v12.14.1)
 
 ## Prepare
 
@@ -59,17 +26,20 @@ Install Knative, Strimzi; create a Kafka cluster:
 ./hack/01-kn-serving.sh && ./hack/02-kn-eventing.sh && ./hack/03-strimzi.sh && ./hack/04-kn-kafka.sh
 ```
 
-Build `request-logger` and `kafka-smasher` images:
+Build images:
 
 ```bash
 ## TODO DOCKER_HUB_USERNAME=<your username here>
 DOCKER_HUB_USERNAME=aliok
 
-docker build request-logger -t docker.io/${DOCKER_HUB_USERNAME}/request-logger
-docker push docker.io/${DOCKER_HUB_USERNAME}/request-logger
+docker build a-processor -t docker.io/${DOCKER_HUB_USERNAME}/a-processor
+docker push docker.io/${DOCKER_HUB_USERNAME}/a-processor
 
-docker build kafka-smasher -t docker.io/${DOCKER_HUB_USERNAME}/kafka-smasher
-docker push docker.io/${DOCKER_HUB_USERNAME}/kafka-smasher
+docker build b-sink -t docker.io/${DOCKER_HUB_USERNAME}/b-sink
+docker push docker.io/${DOCKER_HUB_USERNAME}/b-sink
+
+docker build message-source -t docker.io/${DOCKER_HUB_USERNAME}/message-source
+docker push docker.io/${DOCKER_HUB_USERNAME}/message-source
 ```
 
 ## Run the demo
@@ -79,23 +49,25 @@ docker push docker.io/${DOCKER_HUB_USERNAME}/kafka-smasher
 Create the namespace, the source and the sink:
 
 ```bash
-kubectl -f config/01-namespace.yaml
-kubectl -f config/02-sink.yaml
-kubectl -f config/03-topic.yaml
-kubectl -f config/04-source.yaml
+kubectl apply -f config/01-namespace.yaml
+kubectl apply -f config/02-topics.yaml
+kubectl apply -f config/03-a-processor.yaml
+kubectl apply -f config/04-b-sink.yaml
+kubectl apply -f config/05-kafka-sources.yaml
 ```
 
-Start watching the sink Knative service logs:
+Start watching the Knative service logs:
 
-```bash 
-stern -n my-namespace sink
+```bash
+stern -n my-namespace a-processor
+stern -n my-namespace b-sink
 ```
 
 ### Sending single message
 
 Produce some messages in another terminal:
-```bash 
-kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-producer.sh --broker-list localhost:9092 --topic kafkasource-demo
+```bash
+kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-producer.sh --broker-list localhost:9092 --topic topic-a
 ```
 
 You should see the messages you produced in the sink logs in the previous terminal, but as CloudEvents.
@@ -110,10 +82,10 @@ In another terminal, start watching the pods:
 watch kubectl get pods -n my-namespace
 ```
 
-Create the kafka-smasher job, which sends many messages to Kafka:
+Create the message-source job, which sends many messages to Kafka:
 
 ```bash
-kubectl -f config/05-kafka-smasher.yaml
+kubectl apply -f config/06-message-source.yaml
 ```
 
 You should see a lot of pods coming up.

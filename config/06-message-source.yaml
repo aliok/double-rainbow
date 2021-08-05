@@ -1,21 +1,21 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kafka-smasher
+  name: message-source
   namespace: my-namespace
 spec:
   template:
     spec:
       containers:
-      - name: kafka-smasher
-        image: docker.io/aliok/kafka-smasher:latest
+      - name: message-source
+        image: docker.io/aliok/message-source:latest
         env:
           - name: KAFKA_HOST
             value: my-cluster-kafka-bootstrap.kafka:9092
           - name: KAFKA_TOPIC
-            value: kafkasource-demo
+            value: topic-a
           - name: MESSAGE_COUNT
             value: '20000'
           - name: MESSAGE_FREQUENCY
-            value: '0'
+            value: '30' # send a message every 30 ms
       restartPolicy: Never

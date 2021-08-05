@@ -34,7 +34,7 @@ app.all('*', function (req, res) {
 
 
 app.listen(8080, () => {
-    console.log('https://github.com/aliok/request-logger');
+    console.log('b-sink');
     console.log('App listening on :8080');
 });
 

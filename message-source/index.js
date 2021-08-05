@@ -68,7 +68,7 @@ function sendMessage(i) {
 
     producer.send([{
         topic: kafkaTopic,
-        messages: 'Smasher ' + i
+        messages: 'Message source ' + i
     }], function (err) {
         if (err) {
             console.log('Error sending message ' + i);
