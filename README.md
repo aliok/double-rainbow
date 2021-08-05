@@ -1,4 +1,6 @@
-## Flow
+## Intro
+
+Fork of https://github.com/aliok/knative-serverless-event-processing-demo to experiment with using multiple Kafka Sources.
 
 ```
 Message source  ==>  KafkaSource (a)  ==>  Service (a-processor)  ==>  KafkaSource (b) ==>  Service (b-sink)
